@@ -1,7 +1,6 @@
 package com.alamkanak.weekview.sample;
 
 import android.graphics.RectF;
-import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
@@ -61,14 +60,14 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
         mWeekView.setAddEventClickListener(this);
 
         // Set minDate
-        /*Calendar minDate = Calendar.getInstance();
+        Calendar minDate = Calendar.getInstance();
         minDate.set(Calendar.DAY_OF_MONTH, 1);
-        mWeekView.setMinDate(minDate);*/
+        mWeekView.setMinDate(minDate);
 
         // Set maxDate
-        /*Calendar maxDate = Calendar.getInstance();
-        maxDate.add(Calendar.MONTH, 1);
-        mWeekView.setMaxDate(maxDate);*/
+        Calendar maxDate = Calendar.getInstance();
+        maxDate.set(Calendar.DAY_OF_MONTH, 15);
+        mWeekView.setMaxDate(maxDate);
 
         // Set up a date time interpreter to interpret how the date and time will be formatted in
         // the week view. This is optional.
