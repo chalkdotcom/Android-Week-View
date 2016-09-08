@@ -15,6 +15,7 @@ import com.alamkanak.weekview.WeekViewEvent;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 /**
@@ -51,6 +52,16 @@ public abstract class BaseActivity extends AppCompatActivity implements WeekView
 
         // Set long press listener for empty view
         mWeekView.setEmptyViewLongPressListener(this);
+
+        Date date = new Date(2016, 9, 1);
+        Calendar minDate = Calendar.getInstance();
+        minDate.setTime(date);
+        mWeekView.setMinDate(minDate);
+
+        date = new Date(2016, 9, 15);
+        Calendar maxDate = Calendar.getInstance();
+        maxDate.setTime(date);
+        mWeekView.setMaxDate(maxDate);
 
         // Set up a date time interpreter to interpret how the date and time will be formatted in
         // the week view. This is optional.

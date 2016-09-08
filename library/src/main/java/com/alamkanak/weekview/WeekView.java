@@ -58,6 +58,8 @@ public class WeekView extends View {
     @Deprecated
     public static final int LENGTH_LONG = 2;
     private final Context mContext;
+    private Calendar mMinDate;
+    private Calendar mMaxDate;
     private Paint mTimeTextPaint;
     private float mTimeTextWidth;
     private float mTimeTextHeight;
@@ -202,7 +204,15 @@ public class WeekView extends View {
             switch (mCurrentScrollDirection) {
                 case LEFT:
                 case RIGHT:
-                    mCurrentOrigin.x -= distanceX * mXScrollingSpeed;
+                    float minX = getXMinLimit();
+                    float maxX = getXMaxLimit();
+                    if ((mCurrentOrigin.x - (distanceX * mXScrollingSpeed)) > maxX) {
+                        mCurrentOrigin.x = maxX;
+                    } else if ((mCurrentOrigin.x - (distanceX * mXScrollingSpeed)) < minX) {
+                        mCurrentOrigin.x = minX;
+                    } else {
+                        mCurrentOrigin.x -= distanceX * mXScrollingSpeed;
+                    }
                     ViewCompat.postInvalidateOnAnimation(WeekView.this);
                     break;
                 case VERTICAL:
@@ -230,7 +240,7 @@ public class WeekView extends View {
             switch (mCurrentFlingDirection) {
                 case LEFT:
                 case RIGHT:
-                    mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) (velocityX * mXScrollingSpeed), 0, Integer.MIN_VALUE, Integer.MAX_VALUE, (int) -(mHourHeight * 24 + mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom + mTimeTextHeight / 2 - getHeight()), 0);
+                    mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) (velocityX * mXScrollingSpeed), 0, (int) getXMinLimit(), (int) getXMaxLimit(), (int) -(mHourHeight * 24 + mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom + mTimeTextHeight / 2 - getHeight()), 0);
                     break;
                 case VERTICAL:
                     mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0, (int) velocityY, Integer.MIN_VALUE, Integer.MAX_VALUE, (int) -(mHourHeight * 24 + mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom + mTimeTextHeight/2 - getHeight()), 0);
@@ -458,11 +468,50 @@ public class WeekView extends View {
 
             @Override
             public boolean onScale(ScaleGestureDetector detector) {
-                mNewHourHeight = Math.round(mHourHeight * detector.getScaleFactor());
-                invalidate();
+//                mNewHourHeight = Math.round(mHourHeight * detector.getScaleFactor());
+//                invalidate();
                 return true;
             }
         });
+    }
+
+    private float getXOriginForDate(Calendar date) {
+        return -WeekViewUtil.daysBetween(mMinDate, date) * (mWidthPerDay + mColumnGap);
+    }
+
+    private float getYMinLimit() {
+        return -(mHourHeight * 24
+                + mHeaderTextHeight
+                + mHeaderRowPadding * 2
+                + mHeaderMarginBottom
+                + mTimeTextHeight/2
+                -getHeight()
+        );
+    }
+
+    private float getYMaxLimit() {
+        return 0;
+    }
+
+    private float getXMinLimit() {
+        if (mMaxDate == null) {
+            return Integer.MIN_VALUE;
+        } else {
+            Calendar date = (Calendar) mMaxDate.clone();
+            date.add(Calendar.DATE, 1 - mNumberOfVisibleDays);
+            while (date.before(mMinDate)) {
+                date.add(Calendar.DATE, 1);
+            }
+            return getXOriginForDate(date);
+        }
+    }
+
+    private float getXMaxLimit() {
+        if (mMinDate == null) {
+            return Integer.MAX_VALUE;
+        } else {
+            return getXOriginForDate(mMinDate);
+        }
     }
 
     // fix rotation changes
@@ -554,6 +603,9 @@ public class WeekView extends View {
 
         Calendar today = today();
 
+        Calendar startDate = mMinDate;
+        if (startDate == null) startDate = today;
+
         if (mAreDimensionsInvalid) {
             mEffectiveMinHourHeight= Math.max(mMinHourHeight, (int) ((getHeight() - mHeaderHeight - mHeaderRowPadding * 2 - mHeaderMarginBottom) / 24));
 
@@ -573,8 +625,8 @@ public class WeekView extends View {
             mIsFirstDraw = false;
 
             // If the week view is being drawn for the first time, then consider the first day of the week.
-            if(mNumberOfVisibleDays >= 7 && today.get(Calendar.DAY_OF_WEEK) != mFirstDayOfWeek && mShowFirstDayOfWeekFirst) {
-                int difference = (today.get(Calendar.DAY_OF_WEEK) - mFirstDayOfWeek);
+            if(mNumberOfVisibleDays >= 7 && startDate.get(Calendar.DAY_OF_WEEK) != mFirstDayOfWeek && mShowFirstDayOfWeekFirst) {
+                int difference = (startDate.get(Calendar.DAY_OF_WEEK) - mFirstDayOfWeek);
                 mCurrentOrigin.x += (mWidthPerDay + mColumnGap) * difference;
             }
         }
@@ -608,7 +660,7 @@ public class WeekView extends View {
         float startPixel = startFromPixel;
 
         // Prepare to iterate for each day.
-        Calendar day = (Calendar) today.clone();
+        Calendar day = (Calendar) startDate.clone();
         day.add(Calendar.HOUR, 6);
 
         // Prepare to iterate for each hour to draw the hour lines.
@@ -629,7 +681,7 @@ public class WeekView extends View {
 
         // Iterate through each day.
         Calendar oldFirstVisibleDay = mFirstVisibleDay;
-        mFirstVisibleDay = (Calendar) today.clone();
+        mFirstVisibleDay = (Calendar) startDate.clone();
         mFirstVisibleDay.add(Calendar.DATE, -(Math.round(mCurrentOrigin.x / (mWidthPerDay + mColumnGap))));
         if(!mFirstVisibleDay.equals(oldFirstVisibleDay) && mScrollListener != null){
             mScrollListener.onFirstVisibleDayChanged(mFirstVisibleDay, oldFirstVisibleDay);
@@ -639,7 +691,7 @@ public class WeekView extends View {
              dayNumber++) {
 
             // Check if the day is today.
-            day = (Calendar) today.clone();
+            day = (Calendar) startDate.clone();
             mLastVisibleDay = (Calendar) day.clone();
             day.add(Calendar.DATE, dayNumber - 1);
             mLastVisibleDay.add(Calendar.DATE, dayNumber - 2);
@@ -726,7 +778,7 @@ public class WeekView extends View {
         startPixel = startFromPixel;
         for (int dayNumber=leftDaysWithGaps+1; dayNumber <= leftDaysWithGaps + mNumberOfVisibleDays + 1; dayNumber++) {
             // Check if the day is today.
-            day = (Calendar) today.clone();
+            day = (Calendar) startDate.clone();
             day.add(Calendar.DATE, dayNumber - 1);
             boolean sameDay = isSameDay(day, today);
 
@@ -756,7 +808,8 @@ public class WeekView extends View {
              dayNumber++) {
             float start =  (startPixel < mHeaderColumnWidth ? mHeaderColumnWidth : startPixel);
             if (mWidthPerDay + startPixel - start > 0 && x > start && x < startPixel + mWidthPerDay){
-                Calendar day = today();
+                Calendar day = mMinDate;
+                if (day == null) day = today();
                 day.add(Calendar.DATE, dayNumber - 1);
                 float pixelsFromZero = y - mCurrentOrigin.y - mHeaderHeight
                         - mHeaderRowPadding * 2 - mTimeTextHeight/2 - mHeaderMarginBottom;
@@ -1655,6 +1708,40 @@ public class WeekView extends View {
         this.mXScrollingSpeed = xScrollingSpeed;
     }
 
+    public Calendar getMinDate() {
+        return mMinDate;
+    }
+
+    public void setMinDate(Calendar minDate) {
+        if (minDate != null) {
+            minDate.set(Calendar.HOUR_OF_DAY, 0);
+            minDate.set(Calendar.MINUTE, 0);
+            minDate.set(Calendar.SECOND, 0);
+            minDate.set(Calendar.MILLISECOND, 0);
+        }
+
+        mMinDate = minDate;
+        mCurrentOrigin.x = 0;
+        invalidate();
+    }
+
+    public Calendar getMaxDate() {
+        return mMaxDate;
+    }
+
+    public void setMaxDate(Calendar maxDate) {
+        if (maxDate != null) {
+            maxDate.set(Calendar.HOUR_OF_DAY, 0);
+            maxDate.set(Calendar.MINUTE, 0);
+            maxDate.set(Calendar.SECOND, 0);
+            maxDate.set(Calendar.MILLISECOND, 0);
+        }
+
+        mMaxDate = maxDate;
+        mCurrentOrigin.x = 0;
+        invalidate();
+    }
+
     /**
      * Whether weekends should have a background color different from the normal day background
      * color. The weekend background colors are defined by the attributes
@@ -1854,7 +1941,14 @@ public class WeekView extends View {
 
         int nearestOrigin = (int) (mCurrentOrigin.x - leftDays * (mWidthPerDay + mColumnGap));
 
-        if (nearestOrigin != 0) {
+        boolean mayScroll = mCurrentOrigin.x - nearestOrigin < getXMaxLimit() && mCurrentOrigin.x - nearestOrigin > getXMinLimit();
+
+        if (mayScroll) {
+            mScroller.startScroll((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, -nearestOrigin, 0);
+            ViewCompat.postInvalidateOnAnimation(WeekView.this);
+        }
+
+        if (nearestOrigin != 0 && mayScroll) {
             // Stop current animation.
             mScroller.forceFinished(true);
             // Snap to date.
