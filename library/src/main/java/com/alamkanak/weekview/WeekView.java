@@ -241,10 +241,10 @@ public class WeekView extends View {
                 case VERTICAL:
                     float minY = getYMinLimit();
                     float maxY = getYMaxLimit();
-                    if((mCurrentOrigin.y - (distanceY * mXScrollingSpeed)) > maxY) {
+                    if((mCurrentOrigin.y - (distanceY)) > maxY) {
                         mCurrentOrigin.y = maxY;
                     }
-                    else if((mCurrentOrigin.y - (distanceY * mXScrollingSpeed)) < minY) {
+                    else if((mCurrentOrigin.y - (distanceY)) < minY) {
                         mCurrentOrigin.y = minY;
                     }
                     else {
@@ -273,10 +273,10 @@ public class WeekView extends View {
             switch (mCurrentFlingDirection) {
                 case LEFT:
                 case RIGHT:
-                    mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) (velocityX * mXScrollingSpeed), 0, (int) getXMinLimit(), (int) getXMaxLimit(), (int)-(mHourHeight * 24 + mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom + mTimeTextHeight / 2 - getHeight()), 0);
+                    mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, (int) (velocityX * mXScrollingSpeed), 0, (int) getXMinLimit(), (int) getXMaxLimit(), (int) getYMinLimit(), (int) getYMaxLimit());
                     break;
                 case VERTICAL:
-                    mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0, (int) velocityY, (int) getYMinLimit(), (int) getYMaxLimit(), (int) -(mHourHeight * 24 + mHeaderHeight + mHeaderRowPadding * 2 + mHeaderMarginBottom + mTimeTextHeight/2 - getHeight()), 0);
+                    mScroller.fling((int) mCurrentOrigin.x, (int) mCurrentOrigin.y, 0, (int) velocityY, (int) getXMinLimit(), (int) getXMaxLimit(), (int) getYMinLimit(), (int) getYMaxLimit());
                     break;
             }
 
@@ -2338,13 +2338,7 @@ public class WeekView extends View {
 
         mRefreshEvents = true;
 
-        Calendar today = Calendar.getInstance();
-        today.set(Calendar.HOUR_OF_DAY, 0);
-        today.set(Calendar.MINUTE, 0);
-        today.set(Calendar.SECOND, 0);
-        today.set(Calendar.MILLISECOND, 0);
-
-        mCurrentOrigin.x = - daysBetween(today, date) * (mWidthPerDay + mColumnGap);
+        mCurrentOrigin.x = - daysBetween(mHomeDate, date) * (mWidthPerDay + mColumnGap);
         invalidate();
     }
 
