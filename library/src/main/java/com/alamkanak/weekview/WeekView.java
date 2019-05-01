@@ -141,12 +141,13 @@ public class WeekView extends View {
     private int mHeaderColumnBackgroundColor = Color.WHITE;
     private int mDefaultEventColor;
     private int mNewEventColor;
-    private int mMinEventHeightMinutes = -1;
     private String mNewEventIdentifier = "-100";
     private Drawable mNewEventIconDrawable;
     private int mNewEventLengthInMinutes = 60;
     private int mNewEventTimeResolutionInMinutes = 15;
     private boolean mShowFirstDayOfWeekFirst = false;
+    private int mMinEventHeightMinutes;
+    private boolean mOverlapUsingMinHeight;
 
     private boolean mIsFirstDraw = true;
     private boolean mAreDimensionsInvalid = true;
@@ -495,6 +496,7 @@ public class WeekView extends View {
                 this.enableDropListener();
             mMinOverlappingMinutes = a.getInt(R.styleable.WeekView_minOverlappingMinutes, 0);
             mMinEventHeightMinutes = a.getInteger(R.styleable.WeekView_minEventHeightMinutes, -1);
+            mOverlapUsingMinHeight = a.getBoolean(R.styleable.WeekView_overlapUsingMinHeight, false);
         } finally {
             a.recycle();
         }
@@ -1508,8 +1510,14 @@ public class WeekView extends View {
     private boolean isEventsCollide(WeekViewEvent event1, WeekViewEvent event2) {
         long start1 = event1.getStartTime().getTimeInMillis();
         long end1 = event1.getEndTime().getTimeInMillis();
+        if (mOverlapUsingMinHeight && mMinEventHeightMinutes > 0 && (end1 - start1) < mMinEventHeightMinutes * 60 * 1000) {
+            end1 = start1 + mMinEventHeightMinutes * 60 * 1000;
+        }
         long start2 = event2.getStartTime().getTimeInMillis();
         long end2 = event2.getEndTime().getTimeInMillis();
+        if (mOverlapUsingMinHeight && mMinEventHeightMinutes > 0 && (end2 - start2) < mMinEventHeightMinutes * 60 * 1000) {
+            end2 = start2 + mMinEventHeightMinutes * 60 * 1000;
+        }
 
         long minOverlappingMillis = mMinOverlappingMinutes * 60 * 1000;
 
