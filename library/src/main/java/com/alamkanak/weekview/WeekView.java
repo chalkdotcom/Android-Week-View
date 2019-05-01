@@ -141,6 +141,7 @@ public class WeekView extends View {
     private int mHeaderColumnBackgroundColor = Color.WHITE;
     private int mDefaultEventColor;
     private int mNewEventColor;
+    private int mMinEventHeightMinutes = -1;
     private String mNewEventIdentifier = "-100";
     private Drawable mNewEventIconDrawable;
     private int mNewEventLengthInMinutes = 60;
@@ -493,6 +494,7 @@ public class WeekView extends View {
             if (a.getBoolean(R.styleable.WeekView_dropListenerEnabled, false))
                 this.enableDropListener();
             mMinOverlappingMinutes = a.getInt(R.styleable.WeekView_minOverlappingMinutes, 0);
+            mMinEventHeightMinutes = a.getInteger(R.styleable.WeekView_minEventHeightMinutes, -1);
         } finally {
             a.recycle();
         }
@@ -1482,6 +1484,9 @@ public class WeekView extends View {
                     if (!eventRect.event.isAllDay()) {
                         eventRect.top = getPassedMinutesInDay(eventRect.event.getStartTime());
                         eventRect.bottom = getPassedMinutesInDay(eventRect.event.getEndTime());
+                        if (mMinEventHeightMinutes > 0 && eventRect.bottom - eventRect.top < mMinEventHeightMinutes) {
+                            eventRect.bottom = eventRect.top + mMinEventHeightMinutes;
+                        }
                     } else {
                         eventRect.top = 0;
                         eventRect.bottom = mAllDayEventHeight;
